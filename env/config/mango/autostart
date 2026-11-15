@@ -1,0 +1,16 @@
+#!/bin/bash
+systemctl --user restart xdg-desktop-portal &
+
+/usr/lib/xdg-desktop-portal-gtk >/dev/null 2>&1 &
+
+dunst &
+
+swaybg -i ~/.config/dotfiles/env/config/wallpaper/turbera.jpg &
+
+wl-clip-persist --clipboard regular --reconnect-tries 0 >/dev/null 2>&1 &
+
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 >/dev/null 2>&1 &
+
+quickshell
+
+

@@ -1,0 +1,63 @@
+#!/bin/bash
+set -eu
+
+BASE="$HOME"
+
+DRY_RUN=false
+
+# Git repositories:
+
+declare -a GIT_REPO=(
+	"https://codeberg.org/pretzel/dwm"
+	"https://github.com/dunst-project/dunst"
+	"https://codeberg.org/pretzel/slstatus"
+)
+
+if [[ "${1:-} == "--dry-run ]] || [[ "${1:-}" == "-n" ]]; then
+	DRY_RUN=true
+	echo " DRY RUN MODE - No changes will be made"
+	echo ""
+fi
+
+#
+
+declare -a DEP_FOLDERS=(
+    "dwm"
+    "dunst"
+    "slstatus"
+)
+
+dependency_extraction() {
+	local path="$1"
+	local file="$2"
+	if [[ "$DRY_RUN" == true ]]; then
+		echo "[DRY RUN] would extract and install: $file"
+	fi
+}
+
+dependency_check() {
+	local STRIPPED_LINKS
+	local STRIPPED_NAME
+
+for links in "${GIT_REPO[@]}"; do
+	STRIPPED_NAME=$(echo $links | awk -F"/" '{print $5}')
+	STRIPPED_LINKS+=("$STRIPPED_NAME")
+done
+
+# This one doesn't make much sense.
+# I'm looking to make the dependency do:
+# read the contents of the directory "dependencies", if it doesn't exist create it.
+# if it exists, check for "*.tar.gz", then return the names and compare to the list of
+# used software.
+# slstatus
+# dunst
+# dwm
+# etc, etc.
+if [[ "$DRY_RUN" == true ]]; then
+	if [[ ! "${#STRIPPED_LINKS[@]}" -eq 0 ]]; then
+		echo "There's no \".tar.gz\" files"
+	else
+		echo ""
+
+
+}

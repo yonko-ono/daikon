@@ -1,0 +1,44 @@
+declare -a HOME_DIRS=(
+    "$BASE/bin"
+    "$BASE/dev"
+    "$BASE/var"
+    "$BASE/documents"
+    "$BASE/tools"
+)
+declare -a VAR_SUBDIRS=(
+    "$BASE/var/downloads"
+    "$BASE/var/cache"
+    "$BASE/var/tmp"
+    "$BASE/var/share"
+    "$BASE/var/build"
+)
+declare -a DOCUMENTS_SUBDIRS=(
+    "$BASE/documents/projects"
+    "$BASE/documents/research"
+    "$BASE/documents/notes"
+    "$BASE/documents/templates"
+    "$BASE/documents/archive"
+)
+declare -a VAULT_SUBDIR=(
+    "$BASE/documents/vault"
+    "$BASE/documents/vault/ssh"
+    "$BASE/documents/vault/gpg"
+    "$BASE/documents/vault/keepass"
+    "$BASE/documents/vault/recovery"
+)
+declare -a MEDIA_SUBDIR=(
+    "$BASE/documents/media/images"
+    "$BASE/documents/media/videos"
+    "$BASE/documents/media/audios"
+)
+declare -a CONFIG_SUBDIR=(
+    "$BASE/.config"
+)
+declare -a ALL_DIRS=(
+    "${HOME_DIRS[@]}"
+    "${VAR_SUBDIRS[@]}"
+    "${DOCUMENTS_SUBDIR[@]}"
+    "${VAULT_SUBDIR[@]}"
+    "${MEDIA_SUBDIR[@]}"
+    "${CONFIG_SUBDIR[@]}"
+)

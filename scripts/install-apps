@@ -1,0 +1,35 @@
+#!/bin/bash
+
+echo "Installing core packages..."
+
+echo "Provide command line for installing the packages"
+echo "Example:"
+echo "sudo pacman -S"
+echo "Or:"
+echo "paru -S"
+#read -r cmdline
+
+declare -a PACKAGES=(
+	xorg xbacklight xbindkeys xvkbd xinput xdotool dbus-x11
+	xwallpaper xorg-xset xorg-xprop 
+	alacritty ttf-jetbrains-mono-nerd
+	networkmanager bluez bluez-utils
+	quickshell picom
+	dmenu
+
+	# tools
+	librewolf mullvad-vpn dolphin ark
+	brightnessctl
+       
+	# development
+	git wget curl vim btop p7zip
+	xclip screengrab trash-cli rsync
+)
+
+for packages in ${PACKAGES[@]}; do
+	echo "$packages"
+done
+
+
+
+echo "Installation complete!"

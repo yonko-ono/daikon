@@ -1,0 +1,145 @@
+#!/bin/bash
+set -eu
+
+BASE="$HOME"
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_DIR="$(dirname "$SCRIPT_DIR")"
+ENV_DIR="$PROJECT_DIR/env"
+
+DRY_RUN=false
+echo $SCRIPT_DIR
+# Dry-run implementation, --dry-run triggers it
+if [[ "${1:-}" == "--dry-run" ]] || [[ "${1:-}" == "-n" ]]; then
+	DRY_RUN=true
+	echo " DRY RUN MODE - No changes will be made"
+	echo ""
+fi
+
+create_dir() {
+	local dir="$1"
+	if [[ "$DRY_RUN" == true ]]; then
+		echo "[DRY RUN] Would create: $dir"
+	else
+		mkdir -p "$dir"
+		echo " Created: $dir"
+	fi
+}
+
+set_permission() {
+	local path="$1"
+	local perms="$2"
+
+	if [[ "$DRY_RUN" == true ]]; then
+		echo "[DRY RUN] Would chmod $perms on: $path"
+	else
+		chmod "$perms" "$path"
+		echo " Set $perms on: $path"
+	fi
+}
+
+create_symlink() {
+	local source="$1"
+	local target="$2"
+	if [[ "$DRY_RUN" == true ]]; then
+		echo "[DRY RUN] Would link $source → $target"
+	else
+		if [[ ! -f "$target" ]] ; then 
+			rm -f $target
+		fi
+		if [[ ! -d "$target" ]] ; then
+			rm -rf $target
+		fi
+		ln -sf "$source" "$target"
+		echo " Linked: $source → $target"
+	fi
+}
+clone_repo() {
+    local repo="$1"
+    local folder="$2"
+    if [[ "$DRY_RUN" == true ]]; then
+        echo "[DRY RUN] Would clone $repo to $folder"
+    else
+        git clone "$repo" "$folder"
+        echo " Cloned $repo to $folder"
+    fi
+}
+# Source dirs
+# self-explanatory
+source $SCRIPT_DIR/folder_structure
+
+echo "[ Step 1: Verifying folder structure ]"
+
+MISSING_DIRS=()
+for dir in "${ALL_DIRS[@]}"; do
+	if [[ ! -d "$dir" ]]; then
+		MISSING_DIRS+=("$dir")
+	fi
+
+done
+
+if [[ ${#MISSING_DIRS[@]} -eq 0 ]]; then
+	echo "y All folder structures exist"
+else
+	echo "x One or more folders missing"
+
+	if [[ "$DRY_RUN" == true ]]; then
+		echo "[ DRY RUN ] Would create the following directories:"
+		for dir in "${MISSING_DIRS[@]}"; do
+			echo " - $dir"
+		done
+	else
+	echo " [ Generating folders... ]"
+
+	# Create all missing directories
+	for dir in "${MISSING_DIRS[@]}"; do
+		create_dir "$dir"
+	done
+
+	# Set permissions
+	set_permission "$BASE/documents/vault" "700"
+	for vault_file in "$BASE/documents/vault"/*; do
+		[[ -e "$vault_file" ]] && set_permission "$vault_file" "700"
+	done
+	set_permission "$BASE/var/tmp" "700"
+
+	echo "y Home structure created"
+	fi
+fi
+
+echo "[ Step 2: Symlinking HOMEDIR dotfiles ]"
+
+if [[ "$DRY_RUN" == true ]]; then
+	echo "[DRY RUN] Would create this $HOME symlinks:"
+	
+	for file in $(ls $ENV_DIR | awk '!/config/' ); do
+	echo "$ENV_DIR/$file -> $HOME/.$file"
+	done
+	
+	echo "[DRY RUN] Would create $HOME/.config symlinks:"
+	
+	for file in $(ls $ENV_DIR/config); do
+		echo "$ENV_DIR/config/$file -> $HOME/.config/$file"
+	done
+
+else
+	echo "Creating $HOME symlinks:"
+	
+	for file in $(ls $ENV_DIR | awk '!/config/'); do	
+		create_symlink "$ENV_DIR/$file" "$HOME/.$file"
+	done
+
+	echo "Creating $HOME/.config/ symlinks"
+
+	for file in $(ls $ENV_DIR/config); do
+		create_symlink "$ENV_DIR/config/$file" "$HOME/.config/$file"
+	done
+fi
+
+echo "[ Step 3: Dealing with Dependencies.. ]"
+
+#for dep in "${DEP_FOLDERS[@]}"; do 
+#    clone_repo "https://codeberg.org/pretzel/dwm" "$dep"
+#    clone_repo "https://codeberg.org/pretzel/slstatus" "$dep"
+#done
+    
+

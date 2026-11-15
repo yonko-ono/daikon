@@ -1,0 +1,4 @@
+[[ -f ~/.bashrc ]] && . ~/.bashrc
+
+# Created by `pipx` on 2026-06-22 00:13:27
+export PATH="$PATH:/home/pretzel/.local/bin"
