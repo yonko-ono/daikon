@@ -1,5 +1,5 @@
 #!/bin/bash
-set -eu
+set -euo pipefail
 
 BASE="$HOME"
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
@@ -9,11 +9,15 @@ ENV_DIR="$PROJECT_DIR/env"
 DRY_RUN=false
 echo $SCRIPT_DIR
 # Dry-run implementation, --dry-run triggers it
-if [[ "${1:-}" == "--dry-run" ]] || [[ "${1:-}" == "-n" ]]; then
-	DRY_RUN=true
-	echo " DRY RUN MODE - No changes will be made"
-	echo ""
-fi
+for arg in "$@"; do
+	case "$arg" in
+		-n | --dry-run) DRY_RUN=true ;;
+		-h | --help)	sed -n '2,4p' "$0"; exit 0 ;;
+		*) echo "unknown arg: $arg" >&2; exit 2 ;;
+	esac
+done
+
+[[ "$DRY_RUN" == true ]] && echo " DRY RUN MODE - No changes will be made"
 
 create_dir() {
 	local dir="$1"
@@ -37,21 +41,24 @@ set_permission() {
 	fi
 }
 
+run() {
+    if [[ "$DRY_RUN" == true ]]; then
+        printf '[DRY RUN] Would run: %s\n' "$*"
+    else
+        "$@"
+    fi
+}
+
+warn() { printf '!! %s\n' "$*" >&2; }
+
 create_symlink() {
-	local source="$1"
-	local target="$2"
+	local source="$1" target="$2"
 	if [[ "$DRY_RUN" == true ]]; then
 		echo "[DRY RUN] Would link $source → $target"
-	else
-		if [[ ! -f "$target" ]] ; then 
-			rm -f $target
-		fi
-		if [[ ! -d "$target" ]] ; then
-			rm -rf $target
-		fi
-		ln -sf "$source" "$target"
-		echo " Linked: $source → $target"
 	fi
+	[[ -L "$target" || -e "$target" ]] && rm -rf -- "$target"
+	ln -sfn -- "$source" "$target"
+	echo " Linked: $source -> $target"
 }
 clone_repo() {
     local repo="$1"
@@ -108,38 +115,50 @@ fi
 
 echo "[ Step 2: Symlinking HOMEDIR dotfiles ]"
 
-if [[ "$DRY_RUN" == true ]]; then
-	echo "[DRY RUN] Would create this $HOME symlinks:"
-	
-	for file in $(ls $ENV_DIR | awk '!/config/' ); do
-	echo "$ENV_DIR/$file -> $HOME/.$file"
-	done
-	
-	echo "[DRY RUN] Would create $HOME/.config symlinks:"
-	
-	for file in $(ls $ENV_DIR/config); do
-		echo "$ENV_DIR/config/$file -> $HOME/.config/$file"
-	done
+for path in "$ENV_DIR"/*; do
+	name="$(basename "$path")"
+	[[ "$name" == "config" ]] && continue
+	create_symlink "$path" "$HOME/.$name"
+done
 
-else
-	echo "Creating $HOME symlinks:"
-	
-	for file in $(ls $ENV_DIR | awk '!/config/'); do	
-		create_symlink "$ENV_DIR/$file" "$HOME/.$file"
-	done
-
-	echo "Creating $HOME/.config/ symlinks"
-
-	for file in $(ls $ENV_DIR/config); do
-		create_symlink "$ENV_DIR/config/$file" "$HOME/.config/$file"
-	done
-fi
+echo "[ Step 2: Symlinking ~/.config dotfiles ]"
+for path in "$ENV_DIR/config"/*; do
+	create_symlink "$path" "$HOME/.config/$(basename "$path")"
+done
 
 echo "[ Step 3: Dealing with Dependencies.. ]"
 
-#for dep in "${DEP_FOLDERS[@]}"; do 
-#    clone_repo "https://codeberg.org/pretzel/dwm" "$dep"
-#    clone_repo "https://codeberg.org/pretzel/slstatus" "$dep"
-#done
-    
+DISTRO=""
+if [[ -f /etc/os-release ]]; then
+	. /etc/os-release
+	DISTRO="${ID:-unknown}"
+fi
 
+ARCH_PKGS=(
+	base-devel libx11 libxinerama libxft freetype2 yajl
+	gtk3 gtk4 qt5-base qt6-base qt6ct
+	alacritty quickshell
+)
+
+DEB_PKGS=(
+	build-essential libx11-dev libxinerama-dev libxft-dev libfreetype6-dev libyajl-dev
+	libgtk-3-dev libqt5base5-dev
+)
+
+install_arch() {
+	if command -v paru >/dev/null 2>&1; then
+		run paru -S --needed --noconfirm "${ARCH_PKGS[@]}"
+	else
+		run sudo pacman -S --needed --noconfirm "${ARCH_PKGS[@]}"
+	fi
+}
+
+case "$DISTRO" in
+	arch|artix|endeavouros)
+		install_arch
+		;;
+	*)
+		warn "unsupported distro: $DISTRO - install only dotfiles. DWM manual install required."
+		warn " arch: ${ARCH_PKGS[*]}"
+		;;
+esac

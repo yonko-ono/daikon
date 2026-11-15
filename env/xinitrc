@@ -15,6 +15,6 @@ export XDG_CURRENT_DESKTOP=dwm
 export XDG_SESSION_DESKTOP=dwm
 export QT_QPA_PLATFORMTHEME=qt6ct
 export LEDGER_FILE=~/documents/finances/2026.journal
-/usr/lib/xdg-desktop-portal &
-/usr/lib/xdg-desktop-portal-gtk &
+qs &
+/usr/lib/polkit-gnome/polkit-gnome-authentication-agent-1 &
 exec dwm
